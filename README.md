@@ -7,12 +7,13 @@
     # where platform can be w for windows, m for mac, l for linux
         example:
             sh install.sh m
+
     # afterwards run
     sh create.sh
-    
+
     #if on linux/mac
     sh make.sh
     sh run.sh
-    
+
     #on windows just open the visual studio project that is in the new project folder
 ```
