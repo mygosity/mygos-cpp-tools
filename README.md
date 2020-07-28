@@ -1,16 +1,6 @@
-# Welcome to my tools. Please install Boost for your operating system and then run these commands below.
+# Welcome to my tools. 
 
-to get the submodules run:
-
-```bash
-	git submodule update --init --recursive
-```
-
-to update submodules run
-
-```bash
-	git pull --recurse-submodules
-```
+### Please install Boost for your operating system and then run these commands below.
 
 ```bash
     sh install.sh {platform}
