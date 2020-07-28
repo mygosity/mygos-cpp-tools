@@ -133,7 +133,7 @@ namespace mgcp
                 if (m_bShouldLogFileWriting)
                     stdlog("TryWriteFile:: options.overwrite true");
                 std::string feedData = options.shouldWrapDataAsArray ? std::string("[" + data + "]") : data;
-                DeferFileWrite(std::move(filepath), std::move(path), std::move(key), std::move(data), std::move(options));
+                DeferFileWrite(std::move(filepath), std::move(path), std::move(key), std::move(feedData), std::move(options));
             }
         }
         else
