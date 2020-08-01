@@ -9,10 +9,15 @@ void DisplayIntroductionMessage()
 	fmt::print("Hello, world!\n");
 	std::cout << "***********************************************"
 			  << "\n";
-	std::cout << "********* mygos-cpp-tools has started *********"
+	std::cout << "*********** CMakeTrader has started ***********"
 			  << "\n";
 	std::cout << "***********************************************"
 			  << "\n";
+}
+
+void DispatchInterruptUpdate(int64_t i)
+{
+	stdlog("DispatchInterruptUpdate:: " << i);
 }
 
 int32_t inputEvaluation(std::map<std::string, DynamicObject *> &objectMap, std::string input)
@@ -107,6 +112,8 @@ int32_t main(int32_t argc, char *argv[])
 	int32_t writeCounter = 0;
 	int32_t writeCountery = 0;
 	int32_t writeCounteru = 0;
+
+	std::shared_ptr<mgcp::MemoryMappedJson> testfile;
 	//use a separate thread to read command line and push it to state
 	std::thread io{
 		[&] {
@@ -117,7 +124,10 @@ int32_t main(int32_t argc, char *argv[])
 				std::getline(std::cin, input);
 				if (input == "t")
 				{
-					timeManager.SetOrUpdateTimeout(func, 3000, key);
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					int64_t x = mgcp::ExtractNumberFromString(std::string("abc xyz"));
+					stdlog("final extraction: " << std::to_string(x).c_str() << " time: " << mgcp::TimeManager::GetMicroTime() - timenow);
+					// timeManager.SetOrUpdateTimeout(func, 3000, key);
 				}
 				else if (input == "i")
 				{
@@ -128,6 +138,27 @@ int32_t main(int32_t argc, char *argv[])
 					timeManager.ClearAll();
 					// timeManager.ClearTimeout(key);
 				}
+				else if (input == "create")
+				{
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					uint64_t size = 1000000;
+					testfile = fileHelper.CreateMappedFile("", "testfile.json", (uint64_t)size);
+					stdlog("C++ opened memory mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds of size: " << size);
+				}
+				else if (input == "write")
+				{
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					testfile->AppendJsonData("{ \"prop\": \"key\" }");
+					stdlog("C++ wrote to mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
+				}
+				else if (input == "clear")
+				{
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					testfile->CloseFile();
+					testfile.reset();
+					fileHelper.ClearMappedFiles();
+					stdlog("C++ closed mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
+				}
 				else if (input == "ca")
 				{
 					timeManager.ClearAll();
@@ -136,8 +167,61 @@ int32_t main(int32_t argc, char *argv[])
 				{
 					fileHelper.LoadSettings();
 				}
-				else if (input == "r")
+				else if (input == "k")
 				{
+					fileHelper.SetFileWriteType(2);
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					std::string data = "{ \"t1\": \"hello world\" }";
+					auto options = mgcp::FileWriteOptions();
+					options.shouldWrapDataAsArray = true;
+					options.append = false;
+					options.overwrite = true;
+					std::string path = "";
+					std::string filename = "testfile.json";
+					options.callback = [&]() {
+						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
+					};
+					fileHelper.WriteFile(path, filename, data, options);
+				}
+				else if (input == "j")
+				{
+					fileHelper.SetFileWriteType(1);
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					std::string data = "{ \"t1\": \"hello world\" }";
+					auto options = mgcp::FileWriteOptions();
+					options.shouldWrapDataAsArray = true;
+					options.append = false;
+					options.overwrite = true;
+					std::string path = "";
+					std::string filename = "testfile.json";
+					options.callback = [&]() {
+						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
+					};
+					fileHelper.WriteFile(path, filename, data, options);
+				}
+				else if (input == "o")
+				{
+					fileHelper.SetFileWriteType(0);
+					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
+					std::string data = "{ \"t1\": \"hello world\" }";
+					// std::string start = "{ \"teststring\": \"";
+					// std::string meat = "";
+					// for (int i = 0; i < 1000000; ++i)
+					// {
+					// 	meat.append("123456789");
+					// }
+					// std::string end = "\" }";
+					// std::string data = start + meat + end;
+					auto options = mgcp::FileWriteOptions();
+					options.shouldWrapDataAsArray = true;
+					options.append = false;
+					options.overwrite = true;
+					std::string path = "";
+					std::string filename = "testfile.json";
+					options.callback = [&]() {
+						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
+					};
+					fileHelper.WriteFile(path, filename, data, options);
 				}
 				else if (input == "p")
 				{
@@ -148,7 +232,7 @@ int32_t main(int32_t argc, char *argv[])
 					std::string path = "";
 					std::string filename = "testfile.json";
 					options.callback = [&]() {
-						stdlog("Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow);
+						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
 					};
 					fileHelper.WriteFile(path, filename, data, options);
 				}

@@ -10,9 +10,9 @@ namespace mgcp
         TimerObject(int64_t nt, std::function<void()> cb, int32_t interval, bool repeat, int32_t keyIndex);
         ~TimerObject();
 
-        int64_t nextTime;
-        std::function<void()> callback;
-        int32_t interval;
+        int64_t nextTime;               //8
+        std::function<void()> callback; //4
+        int32_t interval;               //4
         bool repeat = 0;
         int32_t keyIndex;
     };
@@ -57,4 +57,5 @@ namespace mgcp
         std::mutex m_mutex;
         bool m_activeThread = false;
     };
+
 } // namespace mgcp

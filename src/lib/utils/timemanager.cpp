@@ -24,7 +24,7 @@ namespace mgcp
 
     TimeManager::~TimeManager()
     {
-        std::cout << "TimeManager Destroyed" << '\n';
+        stdlog("TimeManager Destroyed");
     }
 
     void TimeManager::Start()

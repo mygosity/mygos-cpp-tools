@@ -7,7 +7,6 @@ const char EMPTY_STRING = 32;
 
 namespace mgcp
 {
-
     FileHelper::FileHelper() : DynamicObject("FileHelper")
     {
         std::string temp = FileHelper::GetExecutionPath();
@@ -25,11 +24,15 @@ namespace mgcp
         m_mMethodMap.insert({"loadFileIntoString", [this]() {}});
 
         m_pFileManager = new FileManager(this);
+        m_pMemoryMapper = new MemoryMapper();
     }
 
     FileHelper::~FileHelper()
     {
         delete m_pFileManager;
+        delete m_pMemoryMapper;
+        ClearMappedFiles();
+        m_mJsonDocuments.clear();
     }
 
     void FileHelper::InvokeMethod(std::string &methodKey)
@@ -69,6 +72,27 @@ namespace mgcp
         stdlog("LoadSettings:: m_bShouldLogFileWriting: " << m_bShouldLogFileWriting);
     }
 
+    std::shared_ptr<MemoryMappedJson> FileHelper::CreateMappedFile(std::string path, std::string filename, uint64_t maxSize)
+    {
+        std::string filepath = m_sLoggingPath + path + filename;
+        const auto target = m_mMappedFiles.find(filepath);
+        if (target != m_mMappedFiles.end())
+        {
+            return target->second;
+        }
+        m_mMappedFiles.emplace(filepath, std::make_shared<MemoryMappedJson>(m_sLoggingPath + path, filename, maxSize));
+        return m_mMappedFiles.find(filepath)->second;
+    }
+
+    void FileHelper::ClearMappedFiles()
+    {
+        for (auto itr = m_mMappedFiles.begin(); itr != m_mMappedFiles.end(); ++itr)
+        {
+            itr->second->CloseFile();
+        }
+        m_mMappedFiles.clear();
+    }
+
     void FileHelper::ReleaseFileLock(const std::string &key)
     {
         m_pFileManager->ReleaseLock(key);
@@ -85,6 +109,33 @@ namespace mgcp
         TryWriteFile(std::move(path), std::move(filename), std::move(data), std::move(options), false);
     }
 
+    inline std::string FileHelper::CreateNextFileInSequence(std::string &basepath, std::string &file, FileWriteOptions &options)
+    {
+        int64_t currentSequence = mgcp::ExtractNumberFromString(file) + 1;
+        std::string numbers = mgcp::PadString(currentSequence, options.nextFilePaddedZeroes, '0');
+        std::vector<std::string> *split = mgcp::SplitString(file, '.');
+        std::string filename = std::move(split->at(0));
+        std::string ext = std::string(".") + std::move(split->at(split->size() - 1));
+        std::string currentPath = basepath + filename + numbers + ext;
+        delete split;
+
+        while (boost::filesystem::exists(currentPath))
+        {
+            if (std::filesystem::file_size(currentPath) >= options.sizeLimit)
+            {
+                currentSequence++;
+                numbers = mgcp::PadString(currentSequence, options.nextFilePaddedZeroes, '0');
+                currentPath = basepath + filename + numbers + ext;
+            }
+            else
+            {
+                return currentPath;
+            }
+        }
+        boost::filesystem::save_string_file(currentPath, "[]");
+        return currentPath;
+    }
+
     inline void FileHelper::TryWriteFile(std::string path, std::string file, std::string data, FileWriteOptions options, bool skipLock)
     {
         std::string filepath = m_sLoggingPath + path + file;
@@ -95,24 +146,33 @@ namespace mgcp
 
         if (skipLock || m_pFileManager->TryLock(key))
         {
-            bool fileExists = boost::filesystem::exists(filepath);
-            if (!fileExists)
+            std::string basepath = m_sLoggingPath + path;
+            bool dirExists = boost::filesystem::exists(basepath);
+            if (!dirExists)
             {
-                std::string basePath = m_sLoggingPath + path;
                 if (m_bShouldLogFileWriting)
-                    stdlog("TryWriteFile::file doesnt exist, creating the path | basePath: " << basePath);
-                boost::filesystem::create_directories(basePath);
+                    stdlog("TryWriteFile::file doesnt exist, creating the path | basepath: " << basepath);
+                boost::filesystem::create_directories(basepath);
             }
             if (options.append)
             {
-                if (fileExists)
+                if (boost::filesystem::exists(filepath))
                 {
                     const int64_t filesize = std::filesystem::file_size(filepath);
                     if (m_bShouldLogFileWriting)
                         stdlog("TryWriteFile:: options.append true | filesize: " << filesize);
                     if (filesize != 0)
                     {
-                        DeferFileJsonAppend(std::move(filepath), std::move(path), std::move(key), std::move(data), std::move(options));
+                        if ((options.sizeLimit > 0 && filesize < options.sizeLimit) || !options.checkFileSize)
+                        {
+                            DeferFileJsonAppend(std::move(filepath), std::move(path), std::move(key), std::move(data), std::move(options));
+                        }
+                        else
+                        {
+                            //create the next file in sequence - nextFilePaddedZeroes
+                            filepath = CreateNextFileInSequence(basepath, file, options);
+                            DeferFileJsonAppend(std::move(filepath), std::move(path), std::move(key), std::move(data), std::move(options));
+                        }
                     }
                     else
                     {
@@ -152,7 +212,23 @@ namespace mgcp
                 // stdlog("DeferFileWrite:: inside threadpool filepath: " << k);
                 stdlog("DeferFileWrite:: inside threadpool filepath: " << k << " d: " << d);
 
-            boost::filesystem::save_string_file(f, d);
+            if (m_iFileWriteType == 0)
+            {
+                InternalWriteFile(f, d);
+            }
+            else if (m_iFileWriteType == 1)
+            {
+                boost::filesystem::save_string_file(f, d);
+            }
+            else if (m_iFileWriteType == 2)
+            {
+                m_pMemoryMapper->WriteFile(f, d);
+            }
+            else
+            {
+                InternalWriteFile(f, d);
+            }
+
             ReleaseFileLock(k);
             if (o.callback != nullptr)
             {
@@ -192,6 +268,29 @@ namespace mgcp
         InternalAppendJSONFile(path, data);
     }
 
+    inline void FileHelper::InternalWriteFile(const std::string &filepath, const std::string &data)
+    {
+#if (BOOST_OS_WINDOWS)
+        // has to be done this way due to the fact that reading a buffer for bytes to get the correct position causes issues due to crlf feeds taking differing amounts of space
+        FILE *fp;
+        errno_t err;
+        if (err = fopen_s(&fp, filepath.c_str(), "w"))
+        {
+            //handle error
+            stdlog("InternalWriteFile:: error opening file: " << filepath.c_str());
+            return;
+        }
+#else
+        FILE *fp = fopen(filepath.c_str(), "w");
+        if (!fp)
+        {
+            return;
+        }
+#endif
+        fputs(data.c_str(), fp);
+        fclose(fp);
+    }
+
     inline void FileHelper::InternalAppendJSONFile(const std::string &filepath, const std::string &data)
     {
 #if (BOOST_OS_WINDOWS)
@@ -211,57 +310,62 @@ namespace mgcp
             return;
         }
 #endif
-        fseek(fp, 0, SEEK_END);
-        long size = ftell(fp);
-        long bufferSize = MAX_BUFFER_SIZE <= size ? MAX_BUFFER_SIZE : size;
-        fseek(fp, -bufferSize, SEEK_END);
-
-        int posFromStart = -1;
-        int posFromEnd = -1;
-        int c, count = bufferSize;
-        do
+        // fseek(fp, 0, SEEK_END);
+        // long size = ftell(fp);
+        int fd = fileno(fp);
+        struct stat sb;
+        if (fstat(fd, &sb) != -1)
         {
-            c = getc(fp);
+            long bufferSize = MAX_BUFFER_SIZE <= sb.st_size ? MAX_BUFFER_SIZE : sb.st_size;
+            fseek(fp, -bufferSize, SEEK_END);
+
+            int posFromStart = -1;
+            int posFromEnd = -1;
+            int c, count = bufferSize;
+            do
+            {
+                c = getc(fp);
+
+                if (m_bShouldLogFileWriting)
+                    stdlog("c: " << c);
+
+                if (c == ARRAY_END_CHAR)
+                {
+                    posFromEnd = count;
+                }
+                else if (c == ARRAY_START_CHAR)
+                {
+                    posFromStart = count;
+                }
+                else if (c == EMPTY_STRING && posFromStart != -1)
+                {
+                    --posFromStart;
+                }
+                --count;
+            } while (c != EOF);
 
             if (m_bShouldLogFileWriting)
-                stdlog("c: " << c);
+                stdlog("last bracket found at: " << posFromEnd << " posFromStart: " << posFromStart << " gap: " << (posFromStart - posFromEnd));
 
-            if (c == ARRAY_END_CHAR)
+            if (posFromEnd != -1)
             {
-                posFromEnd = count;
+                fseek(fp, -posFromEnd, SEEK_END);
+                std::string inputData = posFromStart == -1 || posFromStart - posFromEnd > 1 ? std::string(",") + data + std::string("]") : data + std::string("]");
+                fputs(inputData.c_str(), fp);
+
+                if (m_bShouldLogFileWriting)
+                    stdlog("InternalAppendJSONFile::wrote data to -posFromEnd: " << std::to_string(-posFromEnd));
             }
-            else if (c == ARRAY_START_CHAR)
+            else
             {
-                posFromStart = count;
+                //just append it with an array structure
+                fseek(fp, 0, SEEK_END);
+                std::string inputData = "[" + data + "]";
+                fputs(inputData.c_str(), fp);
+
+                if (m_bShouldLogFileWriting)
+                    stdlog("AppendJSONFile:: could not find end char to append json");
             }
-            else if (c == EMPTY_STRING && posFromStart != -1)
-            {
-                --posFromStart;
-            }
-            --count;
-        } while (c != EOF);
-
-        if (m_bShouldLogFileWriting)
-            stdlog("last bracket found at: " << posFromEnd << " posFromStart: " << posFromStart << " gap: " << (posFromStart - posFromEnd));
-
-        if (posFromEnd != -1)
-        {
-            fseek(fp, -posFromEnd, SEEK_END);
-            std::string inputData = posFromStart == -1 || posFromStart - posFromEnd > 1 ? std::string(",") + data + std::string("]") : data + std::string("]");
-            fputs(inputData.c_str(), fp);
-
-            if (m_bShouldLogFileWriting)
-                stdlog("InternalAppendJSONFile::wrote data to -posFromEnd: " << std::to_string(-posFromEnd));
-        }
-        else
-        {
-            //just append it with an array structure
-            fseek(fp, 0, SEEK_END);
-            std::string inputData = "[" + data + "]";
-            fputs(inputData.c_str(), fp);
-
-            if (m_bShouldLogFileWriting)
-                stdlog("AppendJSONFile:: could not find end char to append json");
         }
         fclose(fp);
     }
@@ -336,6 +440,12 @@ namespace mgcp
     std::string &FileHelper::GetExecutablePath()
     {
         return m_sExecutablePath;
+    }
+
+    void FileHelper::SetFileWriteType(int32_t type)
+    {
+        m_iFileWriteType = type;
+        stdlog("SetFileWriteType:: " << type);
     }
 
     /***********************************************************************************************

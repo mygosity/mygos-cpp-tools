@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./debugger.h"
+#include "./helpers.h"
 
 #include <memory>
 #include <stdio.h>
@@ -38,8 +38,6 @@
 #include <future>
 #include <thread>
 #include <atomic>
-
-#include <fstream>
 
 #include <boost/type_index.hpp>
 #include <boost/asio.hpp>

@@ -10,12 +10,12 @@
 
 namespace mgcp
 {
-    static int64_t GetMicroTime()
+    inline int64_t GetMicroTime()
     {
         return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     }
 
-    static bool IsStringInside(std::string &src, std::string &insider, int32_t srcIndex)
+    inline bool IsStringInside(std::string &src, std::string &insider, int32_t srcIndex)
     {
         if (insider.size() > src.size() - srcIndex)
         {
@@ -31,7 +31,34 @@ namespace mgcp
         return true;
     }
 
-    static std::vector<std::string> *SplitString(std::string &target, std::string &delimiter)
+    inline int64_t ExtractNumberFromString(const std::string &str)
+    {
+        // stdlog("ExtractNumberFromString:: 0: " << (int)'0' << " 9: " << (int)'9');
+        for (size_t i = 0; i < str.size(); ++i)
+        {
+            int c = str[i];
+            if (c >= '0' && c <= '9')
+            {
+                return (int64_t)std::atoi(str.substr(i).c_str());
+            }
+        }
+        return -1;
+    }
+
+    inline std::string PadString(int32_t currentNumber, int32_t padLen, char c)
+    {
+        std::string numberString = std::to_string(currentNumber);
+        if (numberString.size() >= padLen)
+            return numberString;
+
+        std::string answer = "";
+        for (int i = 0; i < padLen - numberString.size(); ++i)
+            answer += c;
+
+        return answer + numberString;
+    }
+
+    inline std::vector<std::string> *SplitString(std::string &target, std::string &delimiter)
     {
         std::vector<std::string> *answer = new std::vector<std::string>();
         int32_t currentIndex = 0, i = 0, currentLength = 0;
@@ -52,7 +79,7 @@ namespace mgcp
         return answer;
     }
 
-    static std::vector<std::string> *SplitString(std::string &target, char delimiter)
+    inline std::vector<std::string> *SplitString(std::string &target, char delimiter)
     {
         std::vector<std::string> *answer = new std::vector<std::string>();
         int32_t currentIndex = 0, i = 0, currentLength = 0;
@@ -73,7 +100,7 @@ namespace mgcp
         return answer;
     }
 
-    static std::vector<std::string> *SplitString(std::string &target, bool (*predicate)(char a, int32_t index, std::string &source) = nullptr)
+    inline std::vector<std::string> *SplitString(std::string &target, bool (*predicate)(char a, int32_t index, std::string &source) = nullptr)
     {
         std::vector<std::string> *answer = new std::vector<std::string>();
         if (predicate == nullptr)
@@ -96,7 +123,7 @@ namespace mgcp
         return answer;
     }
 
-    static std::string StringifyVectorContents(std::vector<std::string> &vec, std::string optionalPrepend = "")
+    inline std::string StringifyVectorContents(std::vector<std::string> &vec, std::string optionalPrepend = "")
     {
         std::string s = optionalPrepend + " { ";
         for (int32_t i = 0; i < vec.size(); ++i)
@@ -112,7 +139,7 @@ namespace mgcp
     }
 
     template <typename T>
-    static void PrintMapKeys(std::map<std::string, T> &map, std::string name = "")
+    inline void PrintMapKeys(std::map<std::string, T> &map, std::string name = "")
     {
         std::cout << "PrintMap::" << name << '\n';
         for (auto itr = map.begin(); itr != map.end(); itr++)
@@ -124,7 +151,7 @@ namespace mgcp
         std::cout << "PrintMap:: finished" << name << '\n';
     }
 
-    static void PrintVector(std::vector<std::vector<int32_t>> &vec, std::string optionalPrepend = "")
+    inline void PrintVector(std::vector<std::vector<int32_t>> &vec, std::string optionalPrepend = "")
     {
         std::string s = optionalPrepend + "{\n";
         for (int32_t i = 0; i < vec.size(); ++i)
@@ -144,7 +171,7 @@ namespace mgcp
                   << '\n';
     }
 
-    static void PrintVector(std::vector<int32_t> &vec, std::string optionalPrepend = "")
+    inline void PrintVector(std::vector<int32_t> &vec, std::string optionalPrepend = "")
     {
         std::string s = optionalPrepend + "{ ";
         for (int32_t i = 0; i < vec.size(); ++i)
@@ -159,7 +186,7 @@ namespace mgcp
                   << '\n';
     }
 
-    static void PrintVector(std::vector<std::string> &vec, std::string optionalPrepend = "")
+    inline void PrintVector(std::vector<std::string> &vec, std::string optionalPrepend = "")
     {
         std::string s = optionalPrepend + "{ ";
         for (int32_t i = 0; i < vec.size(); ++i)
@@ -174,7 +201,7 @@ namespace mgcp
                   << '\n';
     }
 
-    static void PrintVector(std::vector<char> &vec, std::string optionalPrepend = "")
+    inline void PrintVector(std::vector<char> &vec, std::string optionalPrepend = "")
     {
         std::string s = optionalPrepend + "{ ";
         for (int32_t i = 0; i < vec.size(); ++i)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common.h"
+#include "../../common.h"
 
 namespace mgcp
 {
@@ -33,7 +33,7 @@ namespace mgcp
         char jsonWrapper = ']';
         std::function<void()> callback = nullptr;
         int32_t nextFilePaddedZeroes = 4;
-        int32_t sizeLimit = 1;
+        int64_t sizeLimit = 10000000;
         std::string prepend = "";
     };
 

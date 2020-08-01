@@ -1,5 +1,6 @@
 namespace StackOverflow
 {
+
     template <typename T>
     struct DestructiveCopyConstructible
     {

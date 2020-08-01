@@ -17,9 +17,13 @@ namespace mgcp
         auto target = fileLockMap.find(key);
         if (target == fileLockMap.end())
         {
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("TryLock:: " << key << " inserted new lock");
             auto t = fileLockMap.insert({key, true});
             return true;
         }
+        if (filehelper->m_bShouldLogFileWriting)
+            stdlog("TryLock:: " << key << " trying the lock: ");
         //if locked - send a false signal
         if (target->second)
         {
@@ -37,13 +41,25 @@ namespace mgcp
         if (target != fileLockMap.end())
         {
             target->second = false;
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("ReleaseLock:: " << key << " lock released to false");
+        }
+        else
+        {
+            //should never happen
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("ReleaseLock:: " << key << " lock doesn't exist");
         }
         ProcessQueue();
     }
 
     void FileManager::QueueFileWrite(std::string path, std::string file, std::string data, FileWriteOptions options)
     {
+        if (filehelper->m_bShouldLogFileWriting)
+            stdlog("FileManager::QueueFileWrite() before locking | path: " << path << " file: " << file << " data: " << data);
         queueMutex.lock();
+        if (filehelper->m_bShouldLogFileWriting)
+            stdlog("FileManager::QueueFileWrite() after locks");
         const std::string key = path + file;
         auto target = queuedFileWrites.find(key);
         if (target == queuedFileWrites.end())
@@ -74,6 +90,9 @@ namespace mgcp
     {
         if (queueMutex.try_lock())
         {
+            // queueMutex.lock();
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("FileManager::ProcessQueue() start");
             for (auto itr = queuedFileWrites.begin(); itr != queuedFileWrites.end(); ++itr)
             {
                 std::string key = itr->first;
@@ -85,6 +104,9 @@ namespace mgcp
                     if (target->data.size() > 0 && (target->file.size() > 0 || target->path.size() > 0) && !target->processed)
                     {
                         current->second = true;
+                        if (filehelper->m_bShouldLogFileWriting)
+                            stdlog("ProcessQueue:: sending an appended file through | path: " << target->path << " file: " << target->file);
+
                         target->processed = 1;
                         filehelper->TryWriteFile(
                             target->path,
@@ -98,6 +120,13 @@ namespace mgcp
                 }
             }
             queueMutex.unlock();
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("FileManager::ProcessQueue() finished unlocking");
+        }
+        else
+        {
+            if (filehelper->m_bShouldLogFileWriting)
+                stdlog("FileManager::ProcessQueue() locked cant start");
         }
     }
 
