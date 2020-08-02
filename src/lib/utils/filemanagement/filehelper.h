@@ -29,6 +29,7 @@ namespace mgcp
 
         void WriteFile(std::string path, std::string filename, std::string data);
         void WriteFile(std::string path, std::string filename, std::string data, FileWriteOptions options);
+        void WriteFile(std::string path, std::string filename, rapidjson::Document &doc, FileWriteOptions options);
 
         void PrintJsonDocument(rapidjson::Document &doc, bool prettyPrint = true);
         void PrintJsonDocument(rapidjson::Value &value, bool prettyPrint = true);
@@ -45,8 +46,9 @@ namespace mgcp
 
         virtual void InvokeMethod(std::string &methodKey) override;
 
-        void TestPrintSettings();
-        void PrintDebugLogs();
+        void PrintAllFileHelperSettings();
+        void PrintLoadedDocuments();
+        void TestJsonWriting(std::function<void()> cb);
 
     private:
         CodeBlacksmith::ThreadPool *m_pThreadPool;
@@ -78,7 +80,10 @@ namespace mgcp
         void DeferFileJsonAppend(std::string filepath, std::string filename, std::string key, std::string data, FileWriteOptions options);
 
         void InternalWriteFile(const std::string &filepath, const std::string &data);
+        void InternalWriteFile(const std::string &filepath, const char *data, size_t size);
+
         void InternalAppendJSONFile(const std::string &filepath, const std::string &data);
+        void InternalAppendJSONFile(const std::string &filepath, const char *data, size_t size);
 
         void ReleaseFileLock(const std::string &key);
 

@@ -46,17 +46,7 @@ namespace mgcp
         FileHelper::LoadJsonIntoDocument(m_sConfigFilePath, m_EnvConfig);
 
         LoadSettings();
-    }
-
-    void FileHelper::TestPrintSettings()
-    {
-        // printing makes it inoperable due to move operations
-        rapidjson::Document env;
-        rapidjson::Document settings;
-        FileHelper::LoadJsonIntoDocument(m_sConfigFilePath, env);
-        FileHelper::LoadJsonIntoDocument(m_sSettingsFilePath, settings);
-        FileHelper::PrintJsonDocument(env);
-        FileHelper::PrintJsonDocument(settings);
+        PrintLoadedDocuments();
     }
 
     void FileHelper::LoadSettings()
@@ -107,6 +97,15 @@ namespace mgcp
     void FileHelper::WriteFile(std::string path, std::string filename, std::string data, FileWriteOptions options)
     {
         TryWriteFile(std::move(path), std::move(filename), std::move(data), std::move(options), false);
+    }
+
+    void FileHelper::WriteFile(std::string path, std::string filename, rapidjson::Document &doc, FileWriteOptions options)
+    {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+        doc.Accept(writer);
+        TryWriteFile(std::move(path), std::move(filename), std::move(buffer.GetString()), std::move(options), false);
+        buffer.Clear();
     }
 
     inline std::string FileHelper::CreateNextFileInSequence(std::string &basepath, std::string &file, FileWriteOptions &options)
@@ -270,6 +269,11 @@ namespace mgcp
 
     inline void FileHelper::InternalWriteFile(const std::string &filepath, const std::string &data)
     {
+        InternalWriteFile(filepath, data.c_str(), data.size());
+    }
+
+    inline void FileHelper::InternalWriteFile(const std::string &filepath, const char *data, size_t size)
+    {
 #if (BOOST_OS_WINDOWS)
         // has to be done this way due to the fact that reading a buffer for bytes to get the correct position causes issues due to crlf feeds taking differing amounts of space
         FILE *fp;
@@ -287,11 +291,16 @@ namespace mgcp
             return;
         }
 #endif
-        fputs(data.c_str(), fp);
+        fputs(data, fp);
         fclose(fp);
     }
 
     inline void FileHelper::InternalAppendJSONFile(const std::string &filepath, const std::string &data)
+    {
+        InternalAppendJSONFile(filepath, data.c_str(), data.size());
+    }
+
+    inline void FileHelper::InternalAppendJSONFile(const std::string &filepath, const char *data, size_t size)
     {
 #if (BOOST_OS_WINDOWS)
         // has to be done this way due to the fact that reading a buffer for bytes to get the correct position causes issues due to crlf feeds taking differing amounts of space
@@ -310,8 +319,6 @@ namespace mgcp
             return;
         }
 #endif
-        // fseek(fp, 0, SEEK_END);
-        // long size = ftell(fp);
         int fd = fileno(fp);
         struct stat sb;
         if (fstat(fd, &sb) != -1)
@@ -350,7 +357,7 @@ namespace mgcp
             if (posFromEnd != -1)
             {
                 fseek(fp, -posFromEnd, SEEK_END);
-                std::string inputData = posFromStart == -1 || posFromStart - posFromEnd > 1 ? std::string(",") + data + std::string("]") : data + std::string("]");
+                std::string inputData = posFromStart == -1 || posFromStart - posFromEnd > 1 ? std::string(",") + std::string(data) + std::string("]") : std::string(data) + std::string("]");
                 fputs(inputData.c_str(), fp);
 
                 if (m_bShouldLogFileWriting)
@@ -360,7 +367,7 @@ namespace mgcp
             {
                 //just append it with an array structure
                 fseek(fp, 0, SEEK_END);
-                std::string inputData = "[" + data + "]";
+                std::string inputData = std::string("[") + std::string(data) + std::string("]");
                 fputs(inputData.c_str(), fp);
 
                 if (m_bShouldLogFileWriting)
@@ -401,21 +408,16 @@ namespace mgcp
         FILE *fp = fopen(relativeFromRootPath.c_str(), FOPEN_READ_PARAM);
         if (fp)
         {
-            fseek(fp, 0, SEEK_END);
-            size_t filesize = (size_t)ftell(fp);
-            fseek(fp, 0, SEEK_SET);
-            char *buffer = (char *)malloc(filesize + 1);
-
-#if (BOOST_OS_LINUX)
-            rapidjson::FileReadStream is(fp, buffer, sizeof(buffer));
-            doc.ParseStream(is);
-#else
-            size_t readLength = fread(buffer, 1, filesize, fp);
-            buffer[readLength] = '\0';
-            doc.ParseInsitu(buffer);
-#endif
-            free(buffer);
-            fclose(fp);
+            int fd = fileno(fp);
+            struct stat sb;
+            if (fstat(fd, &sb) != -1)
+            {
+                char *buffer = (char *)malloc(sb.st_size + 1);
+                rapidjson::FileReadStream is(fp, buffer, sizeof(buffer));
+                doc.ParseStream(is);
+                free(buffer);
+                fclose(fp);
+            }
         }
 #endif
     }
@@ -449,16 +451,36 @@ namespace mgcp
     }
 
     /***********************************************************************************************
+    * Test Functions
+    ************************************************************************************************/
+
+    void FileHelper::TestJsonWriting(std::function<void()> cb)
+    {
+        FileWriteOptions options;
+        options.shouldWrapDataAsArray = true;
+        options.append = true;
+        options.overwrite = false;
+        options.callback = cb;
+        WriteFile("", "testjsonprint.json", m_EnvConfig, options);
+    }
+
+    /***********************************************************************************************
     * Printers
     ************************************************************************************************/
 
-    void FileHelper::PrintDebugLogs()
+    void FileHelper::PrintAllFileHelperSettings()
     {
         stdlog(this->GetRootPath());
         stdlog(this->GetExecutablePath());
+        PrintLoadedDocuments();
     }
 
-    //note this function makes the document inaccessible later
+    void FileHelper::PrintLoadedDocuments()
+    {
+        FileHelper::PrintJsonDocument(m_EnvConfig);
+        FileHelper::PrintJsonDocument(m_SettingsConfig);
+    }
+
     void FileHelper::PrintJsonDocument(rapidjson::Document &doc, bool prettyPrint)
     {
         rapidjson::StringBuffer envBuffer;
@@ -472,7 +494,7 @@ namespace mgcp
             rapidjson::Writer<rapidjson::StringBuffer> envWriter(envBuffer);
             doc.Accept(envWriter);
         }
-        puts(envBuffer.GetString());
+        stdlog(envBuffer.GetString());
     }
 
     void FileHelper::PrintJsonDocument(rapidjson::Value &value, bool prettyPrint)
@@ -488,7 +510,7 @@ namespace mgcp
             rapidjson::Writer<rapidjson::StringBuffer> envWriter(envBuffer);
             value.Accept(envWriter);
         }
-        puts(envBuffer.GetString());
+        stdlog(envBuffer.GetString());
     }
 
     /***********************************************************************************************

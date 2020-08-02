@@ -65,12 +65,14 @@ int32_t main(int32_t argc, char *argv[])
 
 	mgcp::FileHelper fileHelper;
 	fileHelper.Init(&threadPool);
-	fileHelper.PrintDebugLogs();
+	fileHelper.PrintAllFileHelperSettings();
 
 	std::mutex mainEventMutex;
 	std::condition_variable mainEventSystem;
 
 	mgcp::TimeManager timeManager;
+	// mgcp::EventManager eventManager;
+
 #if (_TIMER_MULTI_THREADED)
 	timeManager.Start();
 #endif
@@ -83,37 +85,13 @@ int32_t main(int32_t argc, char *argv[])
 		{"tp", (DynamicObject *)&threadPool}
 		//
 	};
-
 	mgcp::PrintMapKeys(objectMap);
 
-	int32_t timeoutSystemState = 1;
 	int32_t state = 1;
-	int32_t counter = 0;
-	int32_t test_limit = 100;
 
-	std::function<void()> func([&] {
-		counter++;
-		if (counter > test_limit)
-		{
-#if (_TIMER_MULTI_THREADED)
-			std::unique_lock<std::mutex> lock{mainEventMutex};
-			mainEventSystem.notify_all();
-#endif
-			stdlog("limit reached state = 0");
-			state = 0;
-			lastTimeStamp = timeManager.GetMicroTime();
-			return;
-		}
-		// fileHelper.WriteFile("test1", "");
-		stdlog("interval count : " << counter);
-	});
+	mgcp::FileInputHandlers fileInputHandler(threadPool, timeManager, fileHelper);
+	std::map<std::string, std::function<void(std::string)>> inputHandlers = fileInputHandler.GetMap();
 
-	int32_t key = 0;
-	int32_t writeCounter = 0;
-	int32_t writeCountery = 0;
-	int32_t writeCounteru = 0;
-
-	std::shared_ptr<mgcp::MemoryMappedJson> testfile;
 	//use a separate thread to read command line and push it to state
 	std::thread io{
 		[&] {
@@ -122,176 +100,10 @@ int32_t main(int32_t argc, char *argv[])
 			{
 				// fileHelper.WriteFile("test2input", "");
 				std::getline(std::cin, input);
-				if (input == "t")
+				auto handler = inputHandlers.find(input);
+				if (handler != inputHandlers.end())
 				{
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					int64_t x = mgcp::ExtractNumberFromString(std::string("abc xyz"));
-					stdlog("final extraction: " << std::to_string(x).c_str() << " time: " << mgcp::TimeManager::GetMicroTime() - timenow);
-					// timeManager.SetOrUpdateTimeout(func, 3000, key);
-				}
-				else if (input == "i")
-				{
-					timeManager.SetOrUpdateInterval(func, 100, key);
-				}
-				else if (input == "c")
-				{
-					timeManager.ClearAll();
-					// timeManager.ClearTimeout(key);
-				}
-				else if (input == "create")
-				{
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					uint64_t size = 1000000;
-					testfile = fileHelper.CreateMappedFile("", "testfile.json", (uint64_t)size);
-					stdlog("C++ opened memory mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds of size: " << size);
-				}
-				else if (input == "write")
-				{
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					testfile->AppendJsonData("{ \"prop\": \"key\" }");
-					stdlog("C++ wrote to mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-				}
-				else if (input == "clear")
-				{
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					testfile->CloseFile();
-					testfile.reset();
-					fileHelper.ClearMappedFiles();
-					stdlog("C++ closed mapped file: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-				}
-				else if (input == "ca")
-				{
-					timeManager.ClearAll();
-				}
-				else if (input == "l")
-				{
-					fileHelper.LoadSettings();
-				}
-				else if (input == "k")
-				{
-					fileHelper.SetFileWriteType(2);
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					std::string data = "{ \"t1\": \"hello world\" }";
-					auto options = mgcp::FileWriteOptions();
-					options.shouldWrapDataAsArray = true;
-					options.append = false;
-					options.overwrite = true;
-					std::string path = "";
-					std::string filename = "testfile.json";
-					options.callback = [&]() {
-						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-					};
-					fileHelper.WriteFile(path, filename, data, options);
-				}
-				else if (input == "j")
-				{
-					fileHelper.SetFileWriteType(1);
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					std::string data = "{ \"t1\": \"hello world\" }";
-					auto options = mgcp::FileWriteOptions();
-					options.shouldWrapDataAsArray = true;
-					options.append = false;
-					options.overwrite = true;
-					std::string path = "";
-					std::string filename = "testfile.json";
-					options.callback = [&]() {
-						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-					};
-					fileHelper.WriteFile(path, filename, data, options);
-				}
-				else if (input == "o")
-				{
-					fileHelper.SetFileWriteType(0);
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					std::string data = "{ \"t1\": \"hello world\" }";
-					// std::string start = "{ \"teststring\": \"";
-					// std::string meat = "";
-					// for (int i = 0; i < 1000000; ++i)
-					// {
-					// 	meat.append("123456789");
-					// }
-					// std::string end = "\" }";
-					// std::string data = start + meat + end;
-					auto options = mgcp::FileWriteOptions();
-					options.shouldWrapDataAsArray = true;
-					options.append = false;
-					options.overwrite = true;
-					std::string path = "";
-					std::string filename = "testfile.json";
-					options.callback = [&]() {
-						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-					};
-					fileHelper.WriteFile(path, filename, data, options);
-				}
-				else if (input == "p")
-				{
-					std::int64_t timenow = mgcp::TimeManager::GetMicroTime();
-					std::string data = "{ \"t1\": \"hello world\" }";
-					auto options = mgcp::FileWriteOptions();
-					options.shouldWrapDataAsArray = true;
-					std::string path = "";
-					std::string filename = "testfile.json";
-					options.callback = [&]() {
-						stdlog("C++ Finished writing to the file in time: " << mgcp::TimeManager::GetMicroTime() - timenow << " microseconds");
-					};
-					fileHelper.WriteFile(path, filename, data, options);
-				}
-				else if (input == "w")
-				{
-					auto options = mgcp::FileWriteOptions();
-					std::string data = "{ \"test\": \"" + std::to_string(writeCounter++) + std::string("\" }");
-					std::string path = "";
-					std::string filename = "testfile.json";
-					fileHelper.WriteFile(path, filename, data, options);
-				}
-				else if (input == "wo")
-				{
-					stdlog("overwritecall");
-					auto options = mgcp::FileWriteOptions();
-					options.append = false;
-					options.overwrite = true;
-					std::string data = "{ \"test\": \"" + std::to_string(writeCounter++) + std::string("\" }");
-					std::string testpath = "wooohoo/somewhere/gogo/";
-					std::string altfile = "testfile2.json";
-					fileHelper.WriteFile(testpath, altfile, data, options);
-				}
-				else if (input == "y")
-				{
-					std::function<void()> yfunc = [&]() {
-						auto options = mgcp::FileWriteOptions();
-						std::string data = "{ \"y-test\": \"" + std::to_string(writeCountery++) + std::string("\" }");
-						std::string path = "";
-						std::string filename = "testfile.json";
-						options.callback = [&]() {
-							stdlog("interval y test finished");
-						};
-						fileHelper.WriteFile(path, filename, data, options);
-					};
-					timeManager.SetOrUpdateInterval(yfunc, 10, 0);
-				}
-				else if (input == "u")
-				{
-					std::function<void()> ufunc = [&]() {
-						auto options = mgcp::FileWriteOptions();
-						std::string data = "{ \"uuuu-test\": \"" + std::to_string(writeCounteru++) + std::string("\" }");
-						std::string path = "";
-						std::string filename = "testfile.json";
-						options.callback = [&]() {
-							stdlog("interval uuuu test finished");
-						};
-						fileHelper.WriteFile(path, filename, data, options);
-					};
-					timeManager.SetOrUpdateInterval(ufunc, 16, 1);
-				}
-				else if (input == "z")
-				{
-					fileHelper.TestPrintSettings();
-				}
-				else if (input == "testCountLimit")
-				{
-					counter = 0;
-					test_limit = 100;
-					stdlog("counter: " << counter << " test_limit: " << test_limit);
+					handler->second(input);
 				}
 				else
 				{
