@@ -1,93 +1,101 @@
-#pragma once
+#ifndef MGCP_LIB_UTILS_FILEMANAGEMENT_FILEHELPER_H
+#define MGCP_LIB_UTILS_FILEMANAGEMENT_FILEHELPER_H
 
 #include "../../common.h"
+#include "../../types/destructive_copy_constructible.h"
 #include "../../types/dynamicobject.h"
 #include "../threadpool.h"
-#include "./filestructs.h"
+#include "./fileimports.h"
 #include "./filemanager.h"
+#include "./filestructs.h"
 #include "./memorymapped.h"
 #include "./memorymappedjson.h"
 
-static const char *JsonStringTypes[] = {"Null", "False", "True", "Object", "Array", "String", "Number"};
+static const char* JsonStringTypes[] = {"Null", "False", "True", "Object", "Array", "String", "Number"};
 
-namespace mgcp
-{
-    //resolve circular reference
-    class FileManager;
+namespace mgcp {
 
-    class FileHelper : public DynamicObject
-    {
-    public:
-        FileHelper();
-        ~FileHelper();
+// resolve circular reference
+class FileManager;
 
-        void Init(CodeBlacksmith::ThreadPool *threadPool);
-        void LoadSettings();
+class FileHelper : public DynamicObject {
+   public:
+    FileHelper(CodeBlacksmith::ThreadPool& threadPool);
+    ~FileHelper();
 
-        std::shared_ptr<MemoryMappedJson> CreateMappedFile(std::string path, std::string filename, uint64_t maxSize);
-        void ClearMappedFiles();
+    void Init();
+    void SaveSettings();
+    void LoadSettings();
 
-        void WriteFile(std::string path, std::string filename, std::string data);
-        void WriteFile(std::string path, std::string filename, std::string data, FileWriteOptions options);
-        void WriteFile(std::string path, std::string filename, rapidjson::Document &doc, FileWriteOptions options);
+    std::shared_ptr<MemoryMappedJson> CreateMappedFile(const std::string path, const std::string filename, const uint64_t maxSize);
+    void ClearMappedFiles();
 
-        void PrintJsonDocument(rapidjson::Document &doc, bool prettyPrint = true);
-        void PrintJsonDocument(rapidjson::Value &value, bool prettyPrint = true);
+    void SafeJsonFileRead(const std::string path, const std::string filename, std::promise<std::shared_ptr<rapidjson::Document>>& promise);
 
-        rapidjson::Document *GetJsonDocument(std::string &relativeFromRootPath);
-        void LoadFileIntoString(std::string &relativeFilePath, std::string &targetFile);
-        void LoadJsonIntoDocument(std::string &relativeFromRootPath, rapidjson::Document &doc);
+    void WriteFile(const std::string path, const std::string filename, const std::string data);
+    void WriteFile(const std::string path, const std::string filename, const std::string data, const FileWriteOptions options);
+    void WriteFile(const std::string path, const std::string filename, const rapidjson::Document& doc, const FileWriteOptions options);
 
-        rapidjson::Document &GetEnvConfig();
-        std::string &GetRootPath();
-        std::string &GetExecutablePath();
+    void PrintJsonDocument(rapidjson::Document& doc, bool prettyPrint = true);
+    void PrintJsonDocument(rapidjson::Value& value, bool prettyPrint = true);
 
-        void SetFileWriteType(int32_t type);
+    void LoadFileIntoString(const std::string& relativeFilePath, std::string& targetFile);
+    void LoadJsonIntoDocument(const std::string& relativeFromRootPath, rapidjson::Document& doc);
 
-        virtual void InvokeMethod(std::string &methodKey) override;
+    rapidjson::Document& GetEnvConfig();
+    rapidjson::Document& GetSettingsConfig();
+    std::string& GetRootPath();
+    std::string& GetExecutablePath();
 
-        void PrintAllFileHelperSettings();
-        void PrintLoadedDocuments();
-        void TestJsonWriting(std::function<void()> cb);
+    void SetFileWriteType(int32_t type);
 
-    private:
-        CodeBlacksmith::ThreadPool *m_pThreadPool;
-        FileManager *m_pFileManager;
-        MemoryMapper *m_pMemoryMapper;
+    void PrintAllFileHelperSettings();
+    void PrintLoadedDocuments();
+    void TestJsonWriting(std::function<void()> cb);
 
-        rapidjson::Document m_EnvConfig;
-        rapidjson::Document m_SettingsConfig;
-        std::unordered_map<std::string, rapidjson::Document> m_mJsonDocuments;
-        std::map<std::string, std::shared_ptr<MemoryMappedJson>> m_mMappedFiles;
+    virtual void InvokeMethod(std::string& methodKey) override;
 
-        bool m_bShouldLogFileWriting = true;
-        int32_t m_iFileWriteType = 0;
+   private:
+    CodeBlacksmith::ThreadPool& m_pThreadPool;
+    FileManager* m_pFileManager;
+    MemoryMapper* m_pMemoryMapper;
 
-        std::string m_sExecutablePath;
-        std::string m_sRootPath;
-        std::string m_sConfigFilePath;
-        std::string m_sLoggingPath;
-        std::string m_sSettingsFilePath;
+    rapidjson::Document m_EnvConfig;
+    rapidjson::Document m_SettingsConfig;
+    std::unordered_map<std::string, rapidjson::Document> m_mJsonDocuments;
+    std::map<std::string, std::shared_ptr<MemoryMappedJson>> m_mMappedFiles;
 
-        std::string GetExecutionPath();
+    bool m_bShouldLogFileWriting = true;
+    int32_t m_iFileWriteType = 0;
 
-        void AppendJSONFile(const char *filepath, const std::string &data);
-        void AppendJSONFile(const std::string &filepath, const std::string &data);
-        void TryWriteFile(std::string path, std::string filename, std::string data, FileWriteOptions options, bool skipLock);
-        std::string CreateNextFileInSequence(std::string &basepath, std::string &file, FileWriteOptions &options);
+    std::string m_sExecutablePath;
+    std::string m_sRootPath;
+    std::string m_sConfigFilePath;
+    std::string m_sLoggingPath;
+    std::string m_sSettingsFilePath;
 
-        void DeferFileWrite(std::string filepath, std::string filename, std::string key, std::string data, FileWriteOptions options);
-        void DeferFileJsonAppend(std::string filepath, std::string filename, std::string key, std::string data, FileWriteOptions options);
+    std::string GetExecutionPath();
 
-        void InternalWriteFile(const std::string &filepath, const std::string &data);
-        void InternalWriteFile(const std::string &filepath, const char *data, size_t size);
+    void AppendJSONFile(const char* filepath, const std::string& data);
+    void AppendJSONFile(const std::string& filepath, const std::string& data);
+    void TryWriteFile(const std::string path, const std::string filename, const std::string data, const FileWriteOptions options,
+                      const bool skipLock);
+    std::string CreateNextFileInSequence(const std::string& basepath, const std::string& file, const FileWriteOptions& options);
 
-        void InternalAppendJSONFile(const std::string &filepath, const std::string &data);
-        void InternalAppendJSONFile(const std::string &filepath, const char *data, size_t size);
+    void DeferFileWrite(const std::string filepath, const std::string filename, const std::string key, const std::string data,
+                        const FileWriteOptions options);
+    void DeferFileJsonAppend(const std::string filepath, const std::string filename, const std::string key, const std::string data,
+                             const FileWriteOptions options);
 
-        void ReleaseFileLock(const std::string &key);
+    void InternalWriteFile(const std::string& filepath, const std::string& data);
+    void InternalWriteFile(const std::string& filepath, const char* data, size_t size);
 
-        friend class FileManager;
-    };
+    void InternalAppendJSONFile(const std::string& filepath, const std::string& data);
+    void InternalAppendJSONFile(const std::string& filepath, const char* data, size_t size);
 
-} // namespace mgcp
+    friend class FileManager;
+};
+
+}  // namespace mgcp
+
+#endif

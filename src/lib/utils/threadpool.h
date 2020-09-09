@@ -1,57 +1,57 @@
-#pragma once
+#ifndef MGCP_LIB_UTILS_THREADPOOL_H
+#define MGCP_LIB_UTILS_THREADPOOL_H
 
-#include "../types/dynamicobject.h"
 #include <functional>
 #include <future>
-#include <vector>
-#include <thread>
 #include <queue>
+#include <thread>
+#include <vector>
 
-namespace CodeBlacksmith
-{
+#include "../types/dynamicobject.h"
 
-    class ThreadPool : DynamicObject
-    {
-    public:
-        using Task = std::function<void()>;
+namespace CodeBlacksmith {
 
-        explicit ThreadPool(std::size_t numThreads);
-        ~ThreadPool();
+class ThreadPool : DynamicObject {
+   public:
+    using Task = std::function<void()>;
 
-        virtual void InvokeMethod(std::string &methodKey) override;
+    explicit ThreadPool(std::size_t numThreads);
+    ~ThreadPool();
 
-        template <class T>
-        auto Enqueue(T task) -> std::future<decltype(task())>
+    virtual void InvokeMethod(std::string& methodKey) override;
+
+    template <class T>
+    auto Enqueue(T task) -> std::future<decltype(task())> {
+        auto wrapper = std::make_shared<std::packaged_task<decltype(task())()>>(std::move(task));
         {
-            auto wrapper = std::make_shared<std::packaged_task<decltype(task())()>>(std::move(task));
-            {
-                std::unique_lock<std::mutex> lock{m_EventMutex};
-                m_Tasks.emplace([=, this] {
-                    (*wrapper)();
-                });
-            }
-            m_EventVar.notify_one();
-            return wrapper->get_future();
+            std::unique_lock<std::mutex> lock{m_EventMutex};
+            m_Tasks.emplace([=, this] { (*wrapper)(); });
         }
+        m_EventVar.notify_one();
+        return wrapper->get_future();
+    }
 
-        // inline const std::string &getName() const override { return mName; };
+    // inline const std::string &getName() const override { return mName; };
 
-    private:
-        std::vector<std::thread> m_Threads;
-        std::condition_variable m_EventVar;
-        std::mutex m_EventMutex;
-        bool m_Stopping = false;
-        std::queue<Task> m_Tasks;
+   private:
+    std::vector<std::thread> m_Threads;
+    std::condition_variable m_EventVar;
+    std::mutex m_EventMutex;
+    bool m_Stopping = false;
+    std::queue<Task> m_Tasks;
 
-        void Start(std::size_t numThreads);
-        void Stop() noexcept;
-    };
+    void Start(std::size_t numThreads);
+    void Stop() noexcept;
+};
 
-} // namespace CodeBlacksmith
+}  // namespace CodeBlacksmith
 
 // notes on templating
 // https://stackoverflow.com/questions/8024010/why-do-template-class-functions-have-to-be-declared-in-the-same-translation-unit
-// Most compilers do not support external templates yet, which would allow the type of cpp/h separate you are looking for. However, you can still separate template declarations from implementations similar to what you want. Put the declarations in a .h files, put the implementations in a separate source file with whatever extension you want (.i and .ipp are popular), and then #include the source file at the bottom of the .h file. The compiler sees a single translation unit, and you get code separation.
+// Most compilers do not support external templates yet, which would allow the type of cpp/h separate you are looking for. However, you can
+// still separate template declarations from implementations similar to what you want. Put the declarations in a .h files, put the
+// implementations in a separate source file with whatever extension you want (.i and .ipp are popular), and then #include the source file
+// at the bottom of the .h file. The compiler sees a single translation unit, and you get code separation.
 
 // /*
 // * foo.h
@@ -88,3 +88,5 @@ namespace CodeBlacksmith
 // {
 //   return myfunc<int32_t, decltype(getFuncType<Func, int32_t>())>(lambda);
 // }
+
+#endif

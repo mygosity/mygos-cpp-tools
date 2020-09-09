@@ -39,7 +39,7 @@ CMakeCache.txt
 CMakeFiles
 CMakeFiles/
 */CMakeFiles/*
-cmaketrader.dSYM
+mygos_cpp_tools.dSYM
 main.dSYM
 main.exe.dir
 project/
@@ -50,7 +50,7 @@ Makefile
 *.sln
 
 x64
-cmaketrader.dir
+mygos_cpp_tools.dir
 build
 logging
 env

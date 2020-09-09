@@ -68,3 +68,5 @@ mkdir env
 mkdir project
 echo "{}" > ./env/env.json
 echo "{\"logging\":{\"filewriting\":true}}" > ./env/settings.json
+
+echo "install drogon by following these instructions on this page: https://drogon.docsforge.com/master/installation/"

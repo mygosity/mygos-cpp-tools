@@ -1,35 +1,33 @@
-namespace StackOverflow
-{
+#ifndef MGCP_LIB_TYPES_DESTRUCTIVE_COPY_CONSTRUCTIBLE_H
+#define MGCP_LIB_TYPES_DESTRUCTIVE_COPY_CONSTRUCTIBLE_H
 
-    template <typename T>
-    struct DestructiveCopyConstructible
-    {
-        mutable T value;
+namespace StackOverflow {
 
-        DestructiveCopyConstructible() {}
+template <typename T>
+struct DestructiveCopyConstructible {
+    mutable T value;
 
-        DestructiveCopyConstructible(T &&v) : value(std::move(v)) {}
+    DestructiveCopyConstructible() {}
 
-        DestructiveCopyConstructible(const DestructiveCopyConstructible<T> &rhs)
-            : value(std::move(rhs.value))
-        {
-        }
+    DestructiveCopyConstructible(T&& v) : value(std::move(v)) {}
 
-        DestructiveCopyConstructible(DestructiveCopyConstructible<T> &&rhs) = default;
+    DestructiveCopyConstructible(const DestructiveCopyConstructible<T>& rhs) : value(std::move(rhs.value)) {}
 
-        DestructiveCopyConstructible &operator=(const DestructiveCopyConstructible<T> &rhs) = delete;
+    DestructiveCopyConstructible(DestructiveCopyConstructible<T>&& rhs) = default;
 
-        DestructiveCopyConstructible &operator=(DestructiveCopyConstructible<T> &&rhs) = delete;
-    };
+    DestructiveCopyConstructible& operator=(const DestructiveCopyConstructible<T>& rhs) = delete;
 
-    template <typename T>
-    using DCC_T =
-        DestructiveCopyConstructible<typename std::remove_reference<T>::type>;
+    DestructiveCopyConstructible& operator=(DestructiveCopyConstructible<T>&& rhs) = delete;
+};
 
-    template <typename T>
-    inline DCC_T<T> MoveToDcc(T &&r)
-    {
-        return DCC_T<T>(std::move(r));
-    }
+template <typename T>
+using DCC_T = DestructiveCopyConstructible<typename std::remove_reference<T>::type>;
 
-} // namespace StackOverflow
+template <typename T>
+inline DCC_T<T> MoveToDcc(T&& r) {
+    return DCC_T<T>(std::move(r));
+}
+
+}  // namespace StackOverflow
+
+#endif

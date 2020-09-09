@@ -1,8 +1,14 @@
-# CMakeList.txt : CMake project for mygos_cpp_tools, include source and define
-# project specific logic here.
-#
-cmake_minimum_required (VERSION 3.8)
-project(mygos_cpp_tools VERSION 0.1.0)
+﻿cmake_minimum_required (VERSION 3.8)
+include(Project.cmake)
+project(${CMAKE_PROJECT_NAME} VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}.${PROJECT_VERSION_TWEAK})
+
+# set(CMAKE_CXX_FLAGS "-Wall -Wextra")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
+SET(NDEBUG false CACHE STRING "Set to true to disable debug related items such as assertions")
+add_definitions(-DNDEBUG=${NDEBUG})
+message("NDEBUG=${NDEBUG}")
 
 set(source_dir "${PROJECT_SOURCE_DIR}")
 list(APPEND CMAKE_PREFIX_PATH ../submodules/fmt/build)
@@ -16,6 +22,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 if (WIN32)
+    message("CMAKE DETECTED WINDOWS")
     set(CMAKE_CXX_STANDARD 20)
     set(Boost_DEBUG on)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601")
@@ -32,41 +39,39 @@ if (WIN32)
     set_directory_properties(PROPERTIES
         VS_STARTUP_PROJECT ${PROJECT_NAME}
     )
-
-elseif(LINUX)    #compiled flags all warnings and errors and c++20 -- doesnt work in windows
+elseif(LINUX)
 	#disabled -Werror as it errors on warnings
-    message("CMAKE DETECTED linux")
-    set(CMAKE_C_COMPILER "/usr/bin/gcc-10")
-    set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
+    message("CMAKE DETECTED LINUX")
+    # https://stackoverflow.com/questions/17275348/how-to-specify-new-gcc-path-for-cmake
+    set(CMAKE_C_COMPILER "/usr/bin/gcc-9")
+    set(CMAKE_CXX_COMPILER "/usr/bin/g++-9")
+    # set(CMAKE_C_COMPILER "/usr/bin/gcc-10")
+    # set(CMAKE_CXX_COMPILER "/usr/bin/g++-10")
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a")
-else()
-    message("CMAKE DETECTED something other than windows/linux")
+    include_directories("/home/linuxbrew/.linuxbrew/Cellar/boost/1.73.0/include")
+    include_directories("/usr/local/include/drogon")
+elseif(MACOSX)
+    message("CMAKE DETECTED MACOSX")
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a")
-endif (WIN32)
-
-if (MACOSX)
-    include_directories("/usr/local/Cellar/boost/1.72.0_3/include")
-endif (MACOSX)
-
-if (LINUX)
-	include_directories("/home/linuxbrew/.linuxbrew/Cellar/boost/1.72.0/include")
-endif (LINUX)
+    include_directories("/usr/local/Cellar/boost/1.73.0/include")
+    include_directories("/usr/local/include/drogon")
+endif()
 
 include_directories("../submodules/rapidjson/include")
 include_directories("../submodules/fmt/include")
 include_directories("../submodules/spdlog/include")
 
 #must remember to regenerate the project on adding files
-file(GLOB_RECURSE SRCS *.cpp)
+file(GLOB_RECURSE SRCS *.cc)
 file(GLOB_RECURSE HDRS *.h)
 
-# Add source to this project's executable.
-add_executable (mygos_cpp_tools "main.cpp" "main.h" ${SRCS} ${HDRS})
+add_executable (${CMAKE_PROJECT_NAME} "main.cc" "main.h" ${SRCS} ${HDRS})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
+find_package(Drogon CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 find_package(fmt REQUIRED)
 
@@ -74,13 +79,14 @@ find_package(Boost 1.72.0 REQUIRED COMPONENTS
     filesystem date_time iostreams)
 
 target_link_libraries(
-    mygos_cpp_tools
+    ${CMAKE_PROJECT_NAME}
     ${Boost_THREAD_LIBRARY}
     ${Boost_REGEX_LIBRARY}
     ${Boost_SYSTEM_LIBRARY}
     Boost::filesystem
     Threads::Threads
     fmt::fmt-header-only
+    Drogon::Drogon
 )
 
 include_directories(${CMAKE_SOURCE_DIR})
@@ -88,3 +94,10 @@ include_directories(${CMAKE_SOURCE_DIR})
 set(BUILD_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/project)
 set(CMAKE_BUILD_FILES_DIRECTORY ${BUILD_DIRECTORY})
 set(CMAKE_BUILD_DIRECTORY ${BUILD_DIRECTORY})
+
+#copies the env.json to the target exe folder
+add_custom_command(
+  TARGET ${PROJECT_NAME} PRE_BUILD #PRE_BUILD, PRE_LINK, POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy 
+    ${CMAKE_CURRENT_SOURCE_DIR}/../env/settings.json
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>)
