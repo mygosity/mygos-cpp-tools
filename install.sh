@@ -39,14 +39,26 @@ case $1 in
         PLATFORM="windows"
         echo " PLEASE NOTE: You must install spdlog, fmt, rapidjson separately in visual studio"
         installSubmodules
+        
+        git clone https://github.com/Microsoft/vcpkg.git
+        cd vcpkg
+        # ./bootstrap-vcpkg.sh
+        bootstrap-vcpkg.bat
+        vcpkg.exe integrate install
+        vcpkg.exe install drogon
+        cd ..
+
+        echo "add the appropriate vcpkg toolchain to your cmake in create.sh e.g -DCMAKE_TOOLCHAIN_FILE=BASE_PATH/mygos-cpp-tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
         ;;
     m)  echo "*************** installing mac scripts *************** "
         PLATFORM="mac"
         installSubmodules 1
         ;;
-    l)  echo "*************** installing linux scripts *************** "
+    l)  echo "*************** installing linux scripts - assuming ubuntu18.04 *************** "
         PLATFORM="linux"
         installSubmodules 1
+        # drogon install requirements
+        sudo apt install gcc g++ cmake libjsoncpp-dev uuid-dev openssl libssl-dev zlib1g-dev -y
         ;;
     *)
         echo "*************** building default mac scripts *************** "
@@ -59,6 +71,16 @@ if [ "$PLATFORM" != "windows" ]; then
     cp ./buildscripts/${PLATFORM}/m_make.sh ./make.sh
     cp ./buildscripts/${PLATFORM}/m_mrun.sh ./mrun.sh
     cp ./buildscripts/${PLATFORM}/m_run.sh ./run.sh
+
+    # drogon install requirements https://drogon.docsforge.com/master/installation/
+    cd ..
+    git clone https://github.com/an-tao/drogon
+    cd drogon
+    git submodule update --init
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=Release .. 
+    make && sudo make install
 fi
 
 cp ./buildscripts/${PLATFORM}/m_create.sh ./create.sh
@@ -68,5 +90,3 @@ mkdir env
 mkdir project
 echo "{}" > ./env/env.json
 echo "{\"logging\":{\"filewriting\":true}}" > ./env/settings.json
-
-echo "install drogon by following these instructions on this page: https://drogon.docsforge.com/master/installation/"
