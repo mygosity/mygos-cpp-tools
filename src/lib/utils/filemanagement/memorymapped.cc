@@ -37,7 +37,7 @@ void MemoryMapper::WriteFile(const std::string& filepath, const std::string& dat
     // cast void pointer to char pointer here - works in c but doesnt work in c++ without it
     size_t maxLen = sb.st_size + data.size();
     // have to resize the file to write to it as excess chars assigned will go nowhere
-    std::filesystem::resize_file(filepath, maxLen);
+    boost::filesystem::resize_file(filepath, maxLen);
     stdlog("MemoryMapper::WriteFile-> file size is : " << sb.st_size << " maxLen: " << maxLen << " dlen: " << data.size());
     char* file_in_memory = (char*)mmap(NULL, maxLen, PROT_READ | PROT_WRITE, MAP_SHARED, filedescriptor, 0);
     size_t c = 0;
@@ -49,7 +49,7 @@ void MemoryMapper::WriteFile(const std::string& filepath, const std::string& dat
     munmap(file_in_memory, maxLen);
     close(filedescriptor);
 #else
-    DWORD winHint = 0;
+    //DWORD winHint = 0;
     // switch (_hint)
     //{
     // case Normal:         winHint = FILE_ATTRIBUTE_NORMAL;     break;
@@ -57,13 +57,13 @@ void MemoryMapper::WriteFile(const std::string& filepath, const std::string& dat
     // case RandomAccess:   winHint = FILE_FLAG_RANDOM_ACCESS;   break;
     // default: break;
     //}
-    void* file = ::CreateFileA(filepath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    //void* file = ::CreateFileA(filepath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     // file size
-    LARGE_INTEGER result;
-    if (GetFileSizeEx(file, &result)) {
-        uint64_t filesize = static_cast<uint64_t>(result.QuadPart);
-        char* file_in_memory = (char*)::CreateFileMapping(file, NULL, PAGE_READWRITE, 0, 0, NULL);
-    }
+    //LARGE_INTEGER result;
+    //if (GetFileSizeEx(file, &result)) {
+        //uint64_t filesize = static_cast<uint64_t>(result.QuadPart);
+        //char* file_in_memory = (char*)::CreateFileMapping(file, NULL, PAGE_READWRITE, 0, 0, NULL);
+    //}
 #endif
 }
 }  // namespace mgcp

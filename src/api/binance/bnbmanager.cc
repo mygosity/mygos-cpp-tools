@@ -42,7 +42,7 @@ void BinanceManager::LoadMarkets() {
         ConfigureServerInfo();
     } else {
         logger->info(std::string("LoadMarkets:: valid serverConfig either doesnt exist or out of date - fetching and assigning a new one"));
-        m_pApiHelper->HandleExchangeInfo([=, this](std::shared_ptr<rapidjson::Document> data) {
+        m_pApiHelper->HandleExchangeInfo([=](std::shared_ptr<rapidjson::Document> data) {
             if (data != nullptr) {
                 fileHelper.WriteFile(directory, fileName, *data, GetWriteOnceOptions());
                 exchangeInfo = data;
@@ -56,7 +56,7 @@ void BinanceManager::ConfigureServerInfo() {
     logger->info(std::string("ConfigureServerInfo:: started"));
     const auto& rateLimits = (*exchangeInfo)["rateLimits"].GetArray();
     for (size_t i = 0; i < rateLimits.Size(); ++i) {
-        auto& current = rateLimits[i];
+        const auto& current = rateLimits[i];
         if (current.IsObject()) {
             if (current.GetObject().HasMember("rateLimitType")) {
                 const std::string rateLimitType = current.GetObject()["rateLimitType"].GetString();
@@ -82,16 +82,16 @@ void BinanceManager::ConfigureServerInfo() {
         if (currentRoot.IsObject() && currentRoot.GetObject().HasMember("symbol")) {
             const rapidjson::Value::Object& currentTarget = currentRoot.GetObject();
             const std::string currentSymbol = currentTarget["symbol"].GetString();
-            auto found = std::find_if(symbolList.begin(), symbolList.end(),
-                                      [&](const std::string itr) {  //
-                                          return std::strcmp(itr.c_str(), currentSymbol.c_str()) == 0;
-                                      });
+            const auto found = std::find_if(symbolList.begin(), symbolList.end(),
+                                            [&](const std::string itr) {  //
+                                                return std::strcmp(itr.c_str(), currentSymbol.c_str()) == 0;
+                                            });
 
             if (found != symbolList.end()) {
-                auto symbolPairData = symbolPairMetadata.find(currentSymbol);
+                const auto symbolPairData = symbolPairMetadata.find(currentSymbol);
                 if (symbolPairData == symbolPairMetadata.end()) {
                     logger->info(std::string("symbol found: ").append(*found).append(" adding symbol metadata to map"));
-                    auto symbolData = SymbolPairMetadata(currentTarget);
+                    const auto symbolData = SymbolPairMetadata(currentTarget);
                     symbolPairMetadata.insert({currentSymbol, symbolData});
                 } else {
                     logger->info(std::string("symbol exists: ").append(*found).append(" updating symbol metadata in place"));

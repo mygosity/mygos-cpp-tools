@@ -85,7 +85,7 @@ void FileHelper::SafeJsonFileRead(const std::string path, const std::string file
                                   std::promise<std::shared_ptr<rapidjson::Document>>& promise) {
     bool fileExists = boost::filesystem::exists(m_sRootPath + path + filename);
     if (fileExists) {
-        m_pThreadPool.Enqueue([=, promise = StackOverflow::MoveToDcc(promise), this]() {
+        m_pThreadPool.Enqueue([=, promise = StackOverflow::MoveToDcc(promise)]() {
             std::shared_ptr<rapidjson::Document> doc = std::make_shared<rapidjson::Document>();
             LoadJsonIntoDocument(path + filename, *doc);
             promise.value.set_value(doc);
@@ -124,7 +124,7 @@ inline std::string FileHelper::CreateNextFileInSequence(const std::string& basep
     delete split;
 
     while (boost::filesystem::exists(currentPath)) {
-        if (std::filesystem::file_size(currentPath) >= options.sizeLimit) {
+        if (boost::filesystem::file_size(currentPath) >= options.sizeLimit) {
             currentSequence++;
             numbers = mgcp::PadString(currentSequence, options.nextFilePaddedZeroes, '0');
             currentPath = basepath + filename + numbers + ext;

@@ -25,7 +25,7 @@ class ThreadPool : DynamicObject {
         auto wrapper = std::make_shared<std::packaged_task<decltype(task())()>>(std::move(task));
         {
             std::unique_lock<std::mutex> lock{m_EventMutex};
-            m_Tasks.emplace([=, this] { (*wrapper)(); });
+            m_Tasks.emplace([=] { (*wrapper)(); });
         }
         m_EventVar.notify_one();
         return wrapper->get_future();

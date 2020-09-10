@@ -151,7 +151,7 @@ class MemoryMappedJson {
     void SetFilePointer() {
 #ifndef _MSC_VER
 #if !(_RESIZE_ON_EVERY_WRITE)
-        std::filesystem::resize_file(filepath, maxSize);
+        boost::filesystem::resize_file(filepath, maxSize);
 #endif
         ptr = (char*)mmap(NULL, maxSize, PROT_READ | PROT_WRITE, MAP_SHARED, filedescriptor, 0);
         stdlog("MemoryMappedJson:: file size is : " << currentSize << " maxSize: " << maxSize << " dataNPos: ");

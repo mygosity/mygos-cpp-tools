@@ -10,7 +10,7 @@ void ThreadPool::InvokeMethod(std::string& methodKey) {}
 
 void ThreadPool::Start(std::size_t numThreads) {
     for (auto i = 0u; i < numThreads; ++i) {
-        m_Threads.emplace_back([=, this] {
+        m_Threads.emplace_back([=] {
             while (true) {
                 Task task;
                 {
@@ -22,7 +22,7 @@ void ThreadPool::Start(std::size_t numThreads) {
                     // captured by reference.
                     // [&, divisor]: Captures any referenced variable within the lambda by reference, except divisor that has to be captured
                     // by value. https://www.drdobbs.com/cpp/lambdas-in-c11/240168241?pgno=2
-                    m_EventVar.wait(lock, [=, this] { return m_Stopping || !m_Tasks.empty(); });
+                    m_EventVar.wait(lock, [=] { return m_Stopping || !m_Tasks.empty(); });
                     if (m_Stopping && m_Tasks.empty()) {
                         break;
                     }

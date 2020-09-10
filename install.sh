@@ -42,13 +42,11 @@ case $1 in
         
         git clone https://github.com/Microsoft/vcpkg.git
         cd vcpkg
-        # ./bootstrap-vcpkg.sh
         bootstrap-vcpkg.bat
         vcpkg.exe integrate install
         vcpkg.exe install drogon:x64-windows
         cd ..
 
-        echo "add the appropriate vcpkg toolchain to your cmake in create.sh e.g -DCMAKE_TOOLCHAIN_FILE=BASE_PATH/mygos-cpp-tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
         ;;
     m)  echo "*************** installing mac scripts *************** "
         PLATFORM="mac"
@@ -70,7 +68,6 @@ if [ "$PLATFORM" != "windows" ]; then
     cp ./buildscripts/${PLATFORM}/m_fullbuild.sh ./fullbuild.sh
     cp ./buildscripts/${PLATFORM}/m_make.sh ./make.sh
     cp ./buildscripts/${PLATFORM}/m_mrun.sh ./mrun.sh
-    cp ./buildscripts/${PLATFORM}/m_run.sh ./run.sh
 
     # drogon install requirements https://drogon.docsforge.com/master/installation/
     cd ..
@@ -84,6 +81,7 @@ if [ "$PLATFORM" != "windows" ]; then
 fi
 
 cp ./buildscripts/${PLATFORM}/m_create.sh ./create.sh
+cp ./buildscripts/${PLATFORM}/m_run.sh ./run.sh
 
 mkdir _logs
 mkdir env

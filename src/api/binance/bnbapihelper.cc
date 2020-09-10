@@ -173,7 +173,7 @@ void BinanceApiHelper::LogPingSpeed(const std::function<void(std::shared_ptr<rap
     auto& drogonClient = GetNextHttpClient();
     OnClientRequestStarted(drogonClient.index);
     drogonClient.client->sendRequest(
-        request, [=, index = drogonClient.index, this](drogon::ReqResult result, const drogon::HttpResponsePtr& response) {
+        request, [=, index = drogonClient.index](drogon::ReqResult result, const drogon::HttpResponsePtr& response) {
             this->OnClientRequestCompleted(index);
             const auto data = GetApiResponse(request, result, response);
             if (data != nullptr) {
@@ -192,7 +192,7 @@ void BinanceApiHelper::SyncServerTime(const std::function<void(std::shared_ptr<r
     const auto request = publicRequestMap.at(PublicRequestType::ServerTime);
     auto& drogonClient = GetNextHttpClient();
     OnClientRequestStarted(drogonClient.index);
-    drogonClient.client->sendRequest(request, [=, index = drogonClient.index, this](drogon::ReqResult result,
+    drogonClient.client->sendRequest(request, [=, index = drogonClient.index](drogon::ReqResult result,
                                                                                     const drogon::HttpResponsePtr& response) {
         const auto data = GetApiResponse(request, result, response);
         if (data != nullptr) {
@@ -220,7 +220,7 @@ void BinanceApiHelper::HandleExchangeInfo(const std::function<void(std::shared_p
     const auto request = publicRequestMap.at(PublicRequestType::ExchangeInfo);
     auto& drogonClient = GetNextHttpClient();
     OnClientRequestStarted(drogonClient.index);
-    drogonClient.client->sendRequest(request, [=, index = drogonClient.index, this](drogon::ReqResult result,
+    drogonClient.client->sendRequest(request, [=, index = drogonClient.index](drogon::ReqResult result,
                                                                                     const drogon::HttpResponsePtr& response) {
         this->OnClientRequestCompleted(index);
         const auto data = GetApiResponse(request, result, response);
