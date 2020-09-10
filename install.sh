@@ -45,7 +45,7 @@ case $1 in
         # ./bootstrap-vcpkg.sh
         bootstrap-vcpkg.bat
         vcpkg.exe integrate install
-        vcpkg.exe install drogon
+        vcpkg.exe install drogon:x64-windows
         cd ..
 
         echo "add the appropriate vcpkg toolchain to your cmake in create.sh e.g -DCMAKE_TOOLCHAIN_FILE=BASE_PATH/mygos-cpp-tools/vcpkg/scripts/buildsystems/vcpkg.cmake"
