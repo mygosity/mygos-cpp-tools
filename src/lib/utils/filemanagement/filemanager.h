@@ -13,7 +13,7 @@ class FileHelper;
 
 struct StoredData {
     StoredData(std::string path, std::string file, std::string data, FileWriteOptions options)
-        : path(path), file(file), data(data), options(options){};
+        : options(options), path(path), file(file), data(data){};
     ~StoredData() = default;
 
     FileWriteOptions options;

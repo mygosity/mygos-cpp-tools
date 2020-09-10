@@ -11,7 +11,7 @@ bool FileManager::TryLock(std::string& key) {
     auto target = fileLockMap.find(key);
     if (target == fileLockMap.end()) {
         if (filehelper->m_bShouldLogFileWriting) stdlog("TryLock:: " << key << " inserted new lock");
-        auto t = fileLockMap.insert({key, true});
+        fileLockMap.insert({key, true});
         return true;
     }
     if (filehelper->m_bShouldLogFileWriting) stdlog("TryLock:: " << key << " trying the lock: ");

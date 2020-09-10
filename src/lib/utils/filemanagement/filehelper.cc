@@ -18,9 +18,6 @@ FileHelper::FileHelper(CodeBlacksmith::ThreadPool& threadPool) : DynamicObject("
     m_sSettingsFilePath = m_sRootPath + "env" + DIR_SLASH + "settings.json";
     m_sLoggingPath = m_sRootPath + "_logs" + DIR_SLASH;
 
-    // mMethodMap.insert("loadFileIntoString", &FileHelper::loadFileIntoString);
-    m_mMethodMap.insert({"loadFileIntoString", [this]() {}});
-
     m_pFileManager = new FileManager(this);
     m_pMemoryMapper = new MemoryMapper();
 

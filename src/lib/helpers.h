@@ -133,7 +133,7 @@ inline void PrintMapKeys(std::map<std::string, T>& map, std::string name = "") {
     for (auto itr = map.begin(); itr != map.end(); itr++) {
         auto key = itr->first;
         auto value = itr->second;
-        std::cout << "\tkey: " << key << '\n';
+        std::cout << "\tkey: " << key << " value: " << value << '\n';
     }
     std::cout << "PrintMap:: finished" << name << '\n';
 }

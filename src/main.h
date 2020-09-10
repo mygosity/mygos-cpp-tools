@@ -1,6 +1,10 @@
 ﻿#pragma once
 
+// custom classes
 #include "api/binance/bnbmanager.h"
+#include "controller/trader.h"
+
+// input handlers
 #include "inputhandlers/handlefiles.h"
 #include "inputhandlers/handlesockets.h"
 
@@ -17,6 +21,3 @@
 #include "./lib/utils/threadpool.h"
 #include "./lib/utils/time.h"
 #include "./lib/utils/timemanager.h"
-
-// all non library includes below
-#include "controller/trader.h"

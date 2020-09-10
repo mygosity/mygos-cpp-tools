@@ -28,16 +28,16 @@ struct SocketHandlers {
     SocketHandlers(CodeBlacksmith::ThreadPool& threadPool, mgcp::TimeManager& timeManager, mgcp::FileHelper& fileHelper)
         : threadPool(threadPool), timeManager(timeManager), fileHelper(fileHelper) {
         map = {
-            {"c", [&, this](std::string input) { timeManager.ClearAll(); }},
+            {"c", [&](std::string input) { timeManager.ClearAll(); }},
             {"togglelog",
-             [&, this](std::string input) {
+             [&](std::string input) {
                  rapidjson::Document& target = fileHelper.GetSettingsConfig();
                  rapidjson::Value* filewritingSettingPtr = rapidjson::GetValueByPointer(target, "/logging/filewriting");
                  filewritingSettingPtr->SetBool(!filewritingSettingPtr->GetBool());
                  fileHelper.SaveSettings();
                  fileHelper.LoadSettings();
              }},
-            {"reload", [&, this](std::string input) { fileHelper.LoadSettings(); }}
+            {"reload", [&](std::string input) { fileHelper.LoadSettings(); }}
             //
         };
     };
