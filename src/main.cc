@@ -3,15 +3,6 @@
 #define _TIMER_MULTI_THREADED 0
 #define _BENCHMARK_INTERRUPT_TIME 0
 
-void DisplayIntroductionMessage() {
-    std::cout << "***********************************************"
-              << "\n";
-    std::cout << "*********** CMakeTrader has started ***********"
-              << "\n";
-    std::cout << "***********************************************"
-              << "\n";
-}
-
 void DispatchInterruptUpdate(int64_t i) { stdlog("DispatchInterruptUpdate:: " << i); }
 
 int32_t inputEvaluation(std::map<std::string, DynamicObject*>& objectMap, std::string input) {
@@ -72,8 +63,6 @@ int main(int argc, char* argv[]) {
     timeManager.Start();
 #endif
     int64_t lastTimeStamp = mgcp::GetMicroTime();
-
-    DisplayIntroductionMessage();
 
     std::map<std::string, DynamicObject*> objectMap = {
         {"fh", (DynamicObject*)&fileHelper},  //
