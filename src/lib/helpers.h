@@ -13,7 +13,7 @@
 
 namespace mgcp {
 
-inline bool IsStringInside(std::string& src, std::string& insider, int32_t srcIndex) {
+inline bool IsStringInside(const std::string& src, const std::string& insider, const int32_t srcIndex) {
     if (insider.size() > src.size() - srcIndex) {
         return false;
     }
@@ -36,7 +36,7 @@ inline int64_t ExtractNumberFromString(const std::string& str) {
     return -1;
 }
 
-inline std::string PadString(uint32_t currentNumber, size_t padLen, char c) {
+inline std::string PadString(const uint32_t currentNumber, const size_t padLen, char c) {
     std::string numberString = std::to_string(currentNumber);
     if (numberString.size() >= padLen) return numberString;
 
@@ -46,7 +46,7 @@ inline std::string PadString(uint32_t currentNumber, size_t padLen, char c) {
     return answer + numberString;
 }
 
-inline std::string GetFormattedTime(uint64_t timeMs) {
+inline std::string GetFormattedTime(const uint64_t timeMs) {
     const uint64_t timeSeconds = std::floor(timeMs / 1000);
     std::string formattedString = "";
 
@@ -65,7 +65,7 @@ inline std::string GetFormattedTime(uint64_t timeMs) {
     return formattedString;
 }
 
-[[nodiscard]] inline std::vector<std::string>* SplitString(std::string& target, std::string& delimiter) {
+[[nodiscard]] inline std::vector<std::string>* SplitString(const std::string& target, const std::string& delimiter) {
     std::vector<std::string>* answer = new std::vector<std::string>();
     int32_t currentIndex = 0, i = 0, currentLength = 0;
     for (; i < target.size(); ++i) {
@@ -115,7 +115,7 @@ inline std::string GetFormattedTime(uint64_t timeMs) {
     return answer;
 }
 
-inline std::string StringifyVectorContents(std::vector<std::string>& vec, std::string optionalPrepend = "") {
+inline std::string StringifyVectorContents(const std::vector<std::string>& vec, const std::string optionalPrepend = "") {
     std::string s = optionalPrepend + " { ";
     for (int32_t i = 0; i < vec.size(); ++i) {
         s.append(vec[i]);
@@ -128,7 +128,7 @@ inline std::string StringifyVectorContents(std::vector<std::string>& vec, std::s
 }
 
 template <typename T>
-inline void PrintMapKeys(std::map<std::string, T>& map, std::string name = "") {
+inline void PrintMapKeys(const std::map<std::string, T>& map, const std::string name = "") {
     std::cout << "PrintMap::" << name << '\n';
     for (auto itr = map.begin(); itr != map.end(); itr++) {
         auto key = itr->first;
@@ -138,7 +138,7 @@ inline void PrintMapKeys(std::map<std::string, T>& map, std::string name = "") {
     std::cout << "PrintMap:: finished" << name << '\n';
 }
 
-inline void PrintVector(std::vector<std::vector<int32_t>>& vec, std::string optionalPrepend = "") {
+inline void PrintVector(const std::vector<std::vector<int32_t>>& vec, const std::string optionalPrepend = "") {
     std::string s = optionalPrepend + "{\n";
     for (int32_t i = 0; i < vec.size(); ++i) {
         s.append("\t{ ");
@@ -153,7 +153,7 @@ inline void PrintVector(std::vector<std::vector<int32_t>>& vec, std::string opti
     std::cout << s << "}" << '\n';
 }
 
-inline void PrintVector(std::vector<int32_t>& vec, std::string optionalPrepend = "") {
+inline void PrintVector(const std::vector<int32_t>& vec, const std::string optionalPrepend = "") {
     std::string s = optionalPrepend + "{ ";
     for (int32_t i = 0; i < vec.size(); ++i) {
         s.append(std::to_string(vec[i]));
@@ -164,7 +164,7 @@ inline void PrintVector(std::vector<int32_t>& vec, std::string optionalPrepend =
     std::cout << s << " }" << '\n';
 }
 
-inline void PrintVector(std::vector<std::string>& vec, std::string optionalPrepend = "") {
+inline void PrintVector(const std::vector<std::string>& vec, const std::string optionalPrepend = "") {
     std::string s = optionalPrepend + "{ ";
     for (int32_t i = 0; i < vec.size(); ++i) {
         s.append(vec[i]);
@@ -175,7 +175,7 @@ inline void PrintVector(std::vector<std::string>& vec, std::string optionalPrepe
     std::cout << s << " }" << '\n';
 }
 
-inline void PrintVector(std::vector<char>& vec, std::string optionalPrepend = "") {
+inline void PrintVector(const std::vector<char>& vec, const std::string optionalPrepend = "") {
     std::string s = optionalPrepend + "{ ";
     for (int32_t i = 0; i < vec.size(); ++i) {
         s.push_back(vec[i]);
