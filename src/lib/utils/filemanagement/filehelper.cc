@@ -114,11 +114,10 @@ inline std::string FileHelper::CreateNextFileInSequence(const std::string& basep
                                                         const FileWriteOptions& options) {
     int64_t currentSequence = mgcp::ExtractNumberFromString(file) + 1;
     std::string numbers = mgcp::PadString(currentSequence, options.nextFilePaddedZeroes, '0');
-    std::vector<std::string>* split = mgcp::SplitString(file, '.');
-    std::string filename = std::move(split->at(0));
-    std::string ext = std::string(".") + std::move(split->at(split->size() - 1));
+    std::vector<std::string> split = mgcp::SplitString(file, '.');
+    std::string filename = std::move(split[0]);
+    std::string ext = std::string(".") + std::move(split[(split.size() - 1)]);
     std::string currentPath = basepath + filename + numbers + ext;
-    delete split;
 
     while (boost::filesystem::exists(currentPath)) {
         if (boost::filesystem::file_size(currentPath) >= options.sizeLimit) {

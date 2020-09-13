@@ -27,10 +27,9 @@ class MemoryMappedJson {
     MemoryMappedJson(std::string basepath, std::string filename, uint64_t maxSize)
         : basepath(basepath), filename(filename), maxSize(maxSize) {
         filepath = basepath + filename;
-        std::vector<std::string>* _f = mgcp::SplitString(filename, '.');
-        baseFileName = _f->at(0);
-        baseFileExtension = std::string(".") + _f->at(_f->size() - 1);
-        delete _f;
+        std::vector<std::string> _f = mgcp::SplitString(filename, '.');
+        baseFileName = _f[0];
+        baseFileExtension = std::string(".") + _f[(_f.size() - 1)];
         stdlog("MemoryMappedJson::constructed -> filename: " << filename << " baseFileName: " << baseFileName
                                                              << " baseFileExtension: " << baseFileExtension);
         OpenFile();

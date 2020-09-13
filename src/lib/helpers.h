@@ -65,54 +65,64 @@ inline std::string GetFormattedTime(const uint64_t timeMs) {
     return formattedString;
 }
 
-[[nodiscard]] inline std::vector<std::string>* SplitString(const std::string& target, const std::string& delimiter) {
-    std::vector<std::string>* answer = new std::vector<std::string>();
+inline std::vector<std::string> SplitString(const std::string& target, const std::string& delimiter) {
+    std::vector<std::string> answer;
     int32_t currentIndex = 0, i = 0, currentLength = 0;
     for (; i < target.size(); ++i) {
         if (IsStringInside(target, delimiter, i)) {
-            answer->push_back(target.substr(currentIndex, currentLength));
+            answer.push_back(target.substr(currentIndex, currentLength));
             currentIndex = i + (int32_t)delimiter.size();
             currentLength = 0;
         } else {
             ++currentLength;
         }
     }
-    answer->push_back(target.substr(currentIndex, i));
+    answer.push_back(target.substr(currentIndex, i));
     return answer;
 }
 
-[[nodiscard]] inline std::vector<std::string>* SplitString(const std::string& target, char delimiter) {
-    std::vector<std::string>* answer = new std::vector<std::string>();
+inline std::vector<std::string> SplitString(const std::string& target, char delimiter) {
+    std::vector<std::string> answer;
     int32_t currentIndex = 0, i = 0, currentLength = 0;
     for (; i < target.size(); ++i) {
         if (delimiter == target[i]) {
-            answer->push_back(target.substr(currentIndex, currentLength));
+            answer.push_back(target.substr(currentIndex, currentLength));
             currentIndex = i + 1;
             currentLength = 0;
         } else {
             ++currentLength;
         }
     }
-    answer->push_back(target.substr(currentIndex, i));
+    answer.push_back(target.substr(currentIndex, i));
     return answer;
 }
 
-[[nodiscard]] inline std::vector<std::string>* SplitString(const std::string& target,
-                                                           bool (*predicate)(char a, int32_t index, const std::string& source) = nullptr) {
-    std::vector<std::string>* answer = new std::vector<std::string>();
-    if (predicate == nullptr) return answer;
+inline std::vector<std::string> SplitString(const std::string& target,
+                                            bool (*predicate)(char a, int32_t index, const std::string& source)) {
+    std::vector<std::string> answer;
     int32_t currentIndex = 0, i = 0, currentLength = 0;
     for (; i < target.size(); ++i) {
         if (predicate(target[i], i, target)) {
-            answer->push_back(target.substr(currentIndex, currentLength));
+            answer.push_back(target.substr(currentIndex, currentLength));
             currentIndex = i + 1;
             currentLength = 0;
         } else {
             ++currentLength;
         }
     }
-    answer->push_back(target.substr(currentIndex, i));
+    answer.push_back(target.substr(currentIndex, i));
     return answer;
+}
+
+inline std::string JoinStringVector(const std::vector<std::string>& vec, const std::string& delimiter = "") {
+    std::string s;
+    for (size_t i = 0; i < vec.size(); ++i) {
+        s.append(vec[i]);
+        if (i < vec.size() - 1) {
+            s.append(delimiter);
+        }
+    }
+    return s;
 }
 
 inline std::string StringifyVectorContents(const std::vector<std::string>& vec, const std::string optionalPrepend = "") {

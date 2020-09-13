@@ -7,15 +7,15 @@ void DispatchInterruptUpdate(int64_t i) { stdlog("DispatchInterruptUpdate:: " <<
 
 int32_t inputEvaluation(std::map<std::string, DynamicObject*>& objectMap, std::string input) {
     std::string delimiter = "::";
-    std::vector<std::string>* inputWords = mgcp::SplitString(input, delimiter);
-    mgcp::PrintVector(*inputWords);
+    std::vector<std::string> inputWords = mgcp::SplitString(input, delimiter);
+    mgcp::PrintVector(inputWords);
 
-    std::string& firstInput = inputWords->at(0);
+    std::string& firstInput = inputWords[0];
     auto iter = objectMap.find(firstInput);
     if (iter != objectMap.end()) {
         stdlog("found key: " << firstInput);
-        if (inputWords->size() > 1) {
-            stdlog(inputWords->at(1) << ":: invoked");
+        if (inputWords.size() > 1) {
+            stdlog(inputWords[1] << ":: invoked");
             auto t = iter->second;
             std::cout << "name: " << t->GetName() << '\n';
         }
